@@ -1,0 +1,119 @@
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Save } from "lucide-react";
+import { format } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+
+export const ManualEntry = () => {
+  const [date, setDate] = useState<Date>(new Date());
+  const [meterType, setMeterType] = useState("");
+  const [reading, setReading] = useState("");
+  const { toast } = useToast();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Here you would save to database/storage
+    toast({
+      title: "Reading Saved!",
+      description: `${reading} kWh recorded for ${format(date, "PPP")}`,
+    });
+    
+    // Reset form
+    setReading("");
+    setMeterType("");
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="text-2xl">Log Energy Reading</CardTitle>
+          <CardDescription>Enter your meter reading manually</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="date">Reading Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(day) => day && setDate(day)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meterType">Meter Type</Label>
+              <Select value={meterType} onValueChange={setMeterType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select meter type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="electricity">Electricity</SelectItem>
+                  <SelectItem value="gas">Gas</SelectItem>
+                  <SelectItem value="water">Water</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reading">Meter Reading</Label>
+              <Input
+                id="reading"
+                type="number"
+                step="0.01"
+                placeholder="Enter reading (e.g., 12345.67)"
+                value={reading}
+                onChange={(e) => setReading(e.target.value)}
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                Enter the current reading from your meter
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-4">
+              <div className="space-y-1">
+                <Label className="text-sm text-muted-foreground">Units</Label>
+                <p className="text-2xl font-bold text-foreground">kWh</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm text-muted-foreground">Rate</Label>
+                <p className="text-2xl font-bold text-foreground">$0.15</p>
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
+              disabled={!reading || !meterType}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              Save Reading
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
