@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,20 +6,78 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Save } from "lucide-react";
+import { CalendarIcon, Save, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Question {
+  id: string;
+  question: string;
+  unit: string;
+  placeholder: string;
+}
 
 export const ManualEntry = () => {
   const [date, setDate] = useState<Date>(new Date());
   const [meterType, setMeterType] = useState("");
   const [reading, setReading] = useState("");
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (meterType) {
+      fetchQuestions();
+    } else {
+      setQuestions([]);
+      setAnswers({});
+    }
+  }, [meterType]);
+
+  const fetchQuestions = async () => {
+    setLoadingQuestions(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-energy-questions', {
+        body: { meterType }
+      });
+
+      if (error) throw error;
+      
+      if (data?.questions) {
+        setQuestions(data.questions);
+        const initialAnswers: Record<string, string> = {};
+        data.questions.forEach((q: Question) => {
+          initialAnswers[q.id] = "";
+        });
+        setAnswers(initialAnswers);
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load questions. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Here you would save to database/storage
+    // Here you would save to database/storage including both meter reading and answers
+    const usageData = {
+      date: format(date, "PPP"),
+      meterType,
+      meterReading: reading,
+      applianceUsage: answers
+    };
+    
+    console.log('Saving usage data:', usageData);
+    
     toast({
       title: "Reading Saved!",
       description: `${reading} kWh recorded for ${format(date, "PPP")}`,
@@ -28,6 +86,8 @@ export const ManualEntry = () => {
     // Reset form
     setReading("");
     setMeterType("");
+    setQuestions([]);
+    setAnswers({});
   };
 
   return (
@@ -92,6 +152,36 @@ export const ManualEntry = () => {
               </p>
             </div>
 
+            {loadingQuestions && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading questions...</span>
+              </div>
+            )}
+
+            {questions.length > 0 && (
+              <div className="space-y-4 pt-4 border-t">
+                <Label className="text-lg font-semibold">Appliance Usage Details</Label>
+                <p className="text-sm text-muted-foreground">
+                  Help us calculate your energy usage more accurately
+                </p>
+                {questions.map((q) => (
+                  <div key={q.id} className="space-y-2">
+                    <Label htmlFor={q.id}>{q.question}</Label>
+                    <Input
+                      id={q.id}
+                      type="number"
+                      step="0.1"
+                      placeholder={q.placeholder}
+                      value={answers[q.id] || ""}
+                      onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">{q.unit}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4 pt-4">
               <div className="space-y-1">
                 <Label className="text-sm text-muted-foreground">Units</Label>
@@ -99,7 +189,7 @@ export const ManualEntry = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-sm text-muted-foreground">Rate</Label>
-                <p className="text-2xl font-bold text-foreground">$0.15</p>
+                <p className="text-2xl font-bold text-foreground">₹12</p>
               </div>
             </div>
 

@@ -1,0 +1,4 @@
+project_id = "ujndfokzzbvwdqcerpkg"
+
+[functions.generate-energy-questions]
+verify_jwt = false

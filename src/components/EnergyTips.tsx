@@ -8,7 +8,7 @@ const tips = [
     title: "Switch to LED Bulbs",
     description: "LED bulbs use 75% less energy and last 25 times longer than incandescent lighting.",
     impact: "High",
-    savings: "Up to $75/year",
+    savings: "Up to ₹6,000/year",
     category: "Lighting",
   },
   {
@@ -16,7 +16,7 @@ const tips = [
     title: "Optimize AC Temperature",
     description: "Set your thermostat to 78°F (26°C) when you're home and higher when away.",
     impact: "High",
-    savings: "Up to $120/year",
+    savings: "Up to ₹9,600/year",
     category: "Cooling",
   },
   {
@@ -24,7 +24,7 @@ const tips = [
     title: "Unplug Idle Devices",
     description: "Electronics use power even when turned off. Unplug chargers and appliances when not in use.",
     impact: "Medium",
-    savings: "Up to $50/year",
+    savings: "Up to ₹4,000/year",
     category: "Electronics",
   },
   {
@@ -32,7 +32,7 @@ const tips = [
     title: "Fix Water Leaks",
     description: "A dripping faucet can waste up to 3,000 gallons per year, increasing water heating costs.",
     impact: "Medium",
-    savings: "Up to $35/year",
+    savings: "Up to ₹2,800/year",
     category: "Water",
   },
   {
@@ -40,7 +40,7 @@ const tips = [
     title: "Use Ceiling Fans",
     description: "Ceiling fans help circulate air, allowing you to raise the AC temperature by 4°F.",
     impact: "Medium",
-    savings: "Up to $45/year",
+    savings: "Up to ₹3,600/year",
     category: "Cooling",
   },
   {
@@ -48,7 +48,7 @@ const tips = [
     title: "Wash Clothes in Cold Water",
     description: "90% of the energy used by washing machines goes to heating water.",
     impact: "Low",
-    savings: "Up to $25/year",
+    savings: "Up to ₹2,000/year",
     category: "Appliances",
   },
 ];
@@ -115,7 +115,7 @@ export const EnergyTips = () => {
             <div>
               <h3 className="text-xl font-bold mb-2">Your Impact</h3>
               <p className="text-primary-foreground/90">
-                By implementing these tips, you could save up to <strong>$350 per year</strong> and 
+                By implementing these tips, you could save up to <strong>₹28,000 per year</strong> and 
                 reduce your carbon footprint by approximately <strong>2.5 tons of CO₂</strong> annually.
               </p>
             </div>

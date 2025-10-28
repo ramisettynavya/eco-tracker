@@ -57,8 +57,8 @@ export const DashboardOverview = () => {
             <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$78.00</div>
-            <p className="text-xs text-muted-foreground">At $0.15/kWh</p>
+            <div className="text-2xl font-bold">₹6,240</div>
+            <p className="text-xs text-muted-foreground">At ₹12/kWh</p>
           </CardContent>
         </Card>
 

@@ -82,11 +82,11 @@ export const HistoricalData = () => {
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Cost</p>
-                        <p className="text-lg font-bold text-primary">${reading.cost.toFixed(2)}</p>
+                        <p className="text-lg font-bold text-primary">₹{(reading.cost * 80).toFixed(0)}</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Rate</p>
-                        <p className="text-lg font-bold">$0.15/kWh</p>
+                        <p className="text-lg font-bold">₹12/kWh</p>
                       </div>
                     </div>
                   </CardContent>
@@ -113,8 +113,8 @@ export const HistoricalData = () => {
             <CardTitle className="text-sm font-medium">Total Cost (6 months)</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-primary">$400.50</p>
-            <p className="text-xs text-muted-foreground">$66.75 average/month</p>
+            <p className="text-2xl font-bold text-primary">₹32,040</p>
+            <p className="text-xs text-muted-foreground">₹5,340 average/month</p>
           </CardContent>
         </Card>
 
@@ -124,7 +124,7 @@ export const HistoricalData = () => {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-primary">April</p>
-            <p className="text-xs text-muted-foreground">390 kWh - $58.50</p>
+            <p className="text-xs text-muted-foreground">390 kWh - ₹4,680</p>
           </CardContent>
         </Card>
       </div>
