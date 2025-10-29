@@ -6,10 +6,17 @@ import { EnergyTips } from "@/components/EnergyTips";
 import { HistoricalData } from "@/components/HistoricalData";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Zap, Camera, TrendingUp, Lightbulb, BarChart3 } from "lucide-react";
+import { Zap, Camera, TrendingUp, Lightbulb, BarChart3, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out successfully");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/5">
@@ -26,6 +33,10 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">Energy Usage Tracker</p>
               </div>
             </div>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
           </div>
         </div>
       </header>

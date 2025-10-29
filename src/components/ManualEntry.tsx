@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Save, Loader2 } from "lucide-react";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Question {
@@ -25,7 +25,6 @@ export const ManualEntry = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loadingQuestions, setLoadingQuestions] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (meterType) {
@@ -55,39 +54,77 @@ export const ManualEntry = () => {
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load questions. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to load questions. Please try again.");
     } finally {
       setLoadingQuestions(false);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Here you would save to database/storage including both meter reading and answers
-    const usageData = {
-      date: format(date, "PPP"),
-      meterType,
-      meterReading: reading,
-      applianceUsage: answers
-    };
-    
-    console.log('Saving usage data:', usageData);
-    
-    toast({
-      title: "Reading Saved!",
-      description: `${reading} kWh recorded for ${format(date, "PPP")}`,
-    });
-    
-    // Reset form
-    setReading("");
-    setMeterType("");
-    setQuestions([]);
-    setAnswers({});
+    if (!date || !meterType || !reading) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("You must be logged in to submit readings");
+        return;
+      }
+
+      // Calculate cost (₹12 per kWh)
+      const cost = parseFloat(reading) * 12;
+
+      // Insert meter reading
+      const { data: meterReading, error: readingError } = await supabase
+        .from('meter_readings')
+        .insert({
+          user_id: user.id,
+          reading_date: format(date, 'yyyy-MM-dd'),
+          meter_type: meterType,
+          reading: parseFloat(reading),
+          cost: cost,
+        })
+        .select()
+        .single();
+
+      if (readingError) throw readingError;
+
+      // Insert appliance usage data
+      if (meterReading && Object.keys(answers).length > 0) {
+        const usageData = Object.entries(answers).map(([questionId, answer]) => {
+          const question = questions.find(q => q.id === questionId);
+          return {
+            reading_id: meterReading.id,
+            question_id: questionId,
+            question: question?.question || '',
+            answer: answer,
+            unit: question?.unit || '',
+          };
+        });
+
+        const { error: usageError } = await supabase
+          .from('appliance_usage')
+          .insert(usageData);
+
+        if (usageError) throw usageError;
+      }
+
+      toast.success("Reading submitted successfully!");
+      
+      // Reset form
+      setReading("");
+      setMeterType("");
+      setQuestions([]);
+      setAnswers({});
+    } catch (error) {
+      console.error('Error submitting reading:', error);
+      toast.error("Failed to submit reading. Please try again.");
+    }
   };
 
   return (
