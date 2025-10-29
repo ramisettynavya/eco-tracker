@@ -1,16 +1,10 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-const historicalReadings = [
-  { date: "2024-06-01", reading: 12845.67, usage: 520, cost: 78.0, change: 26.8 },
-  { date: "2024-05-01", reading: 12325.67, usage: 410, cost: 61.5, change: 5.1 },
-  { date: "2024-04-01", reading: 11915.67, usage: 390, cost: 58.5, change: -18.8 },
-  { date: "2024-03-01", reading: 11525.67, usage: 480, cost: 72.0, change: 14.3 },
-  { date: "2024-02-01", reading: 11045.67, usage: 420, cost: 63.0, change: -6.7 },
-  { date: "2024-01-01", reading: 10625.67, usage: 450, cost: 67.5, change: 0 },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 const getTrendIcon = (change: number) => {
   if (change > 0) return <TrendingUp className="h-4 w-4 text-destructive" />;
@@ -25,6 +19,66 @@ const getTrendColor = (change: number) => {
 };
 
 export const HistoricalData = () => {
+  const [readings, setReadings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchReadings();
+  }, []);
+
+  const fetchReadings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('meter_readings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('reading_date', { ascending: false });
+
+      if (data) {
+        // Calculate change percentages
+        const readingsWithChange = data.map((reading, index) => {
+          if (index === data.length - 1) {
+            return { ...reading, change: 0 };
+          }
+          const previousReading = data[index + 1];
+          const change = ((Number(reading.reading) - Number(previousReading.reading)) / Number(previousReading.reading)) * 100;
+          return { ...reading, change };
+        });
+        setReadings(readingsWithChange);
+      }
+    } catch (error) {
+      console.error('Error fetching readings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalUsage = readings.reduce((sum, r) => sum + Number(r.reading), 0);
+  const totalCost = readings.reduce((sum, r) => sum + Number(r.cost), 0);
+  const avgUsage = readings.length > 0 ? (totalUsage / readings.length).toFixed(0) : "0";
+  const avgCost = readings.length > 0 ? (totalCost / readings.length).toFixed(0) : "0";
+  const bestMonth = readings.length > 0 
+    ? readings.reduce((min, r) => Number(r.reading) < Number(min.reading) ? r : min, readings[0])
+    : null;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (readings.length === 0) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-muted-foreground">No readings yet. Add your first reading to get started!</p>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2 mb-8">
@@ -42,7 +96,7 @@ export const HistoricalData = () => {
         <CardContent>
           <ScrollArea className="h-[600px] pr-4">
             <div className="space-y-4">
-              {historicalReadings.map((reading, index) => (
+              {readings.map((reading, index) => (
                 <Card 
                   key={index} 
                   className="shadow-sm hover:shadow-card transition-shadow"
@@ -55,13 +109,10 @@ export const HistoricalData = () => {
                         </div>
                         <div>
                           <p className="font-semibold">
-                            {new Date(reading.date).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'long' 
-                            })}
+                            {format(new Date(reading.reading_date), 'MMMM yyyy')}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Reading: {reading.reading.toLocaleString()} kWh
+                            Reading: {Number(reading.reading).toLocaleString()} kWh
                           </p>
                         </div>
                       </div>
@@ -78,11 +129,11 @@ export const HistoricalData = () => {
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Usage</p>
-                        <p className="text-lg font-bold">{reading.usage} kWh</p>
+                        <p className="text-lg font-bold">{Number(reading.reading).toFixed(0)} kWh</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Cost</p>
-                        <p className="text-lg font-bold text-primary">₹{(reading.cost * 80).toFixed(0)}</p>
+                        <p className="text-lg font-bold text-primary">₹{Number(reading.cost).toFixed(0)}</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Rate</p>
@@ -103,18 +154,18 @@ export const HistoricalData = () => {
             <CardTitle className="text-sm font-medium">Average Monthly Usage</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">445 kWh</p>
-            <p className="text-xs text-muted-foreground">Last 6 months</p>
+            <p className="text-2xl font-bold">{avgUsage} kWh</p>
+            <p className="text-xs text-muted-foreground">Average per reading</p>
           </CardContent>
         </Card>
 
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Total Cost (6 months)</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-primary">₹32,040</p>
-            <p className="text-xs text-muted-foreground">₹5,340 average/month</p>
+            <p className="text-2xl font-bold text-primary">₹{totalCost.toFixed(0)}</p>
+            <p className="text-xs text-muted-foreground">₹{avgCost} average</p>
           </CardContent>
         </Card>
 
@@ -123,8 +174,12 @@ export const HistoricalData = () => {
             <CardTitle className="text-sm font-medium">Best Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-primary">April</p>
-            <p className="text-xs text-muted-foreground">390 kWh - ₹4,680</p>
+            <p className="text-2xl font-bold text-primary">
+              {bestMonth ? format(new Date(bestMonth.reading_date), 'MMMM') : 'N/A'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {bestMonth ? `${Number(bestMonth.reading).toFixed(0)} kWh - ₹${Number(bestMonth.cost).toFixed(0)}` : 'No data'}
+            </p>
           </CardContent>
         </Card>
       </div>
